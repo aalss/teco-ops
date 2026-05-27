@@ -110,8 +110,8 @@ __device__ static __always_inline void caculate_variance(float* x, float* mean, 
 // deal with the data like (row, col) and transfer to (1, col)
 __global__ void teco_slave_reduce_variance_axis_left_float(ReduceVarianceArgs arg) {
     const uint32_t spe_num = arg.spe_num;
-    const float* x = (float*)arg.x;
-    float* y = (float*)arg.y;
+    const float* x = (float*)arg.x;  // NOLINT
+    float* y = (float*)arg.y;  // NOLINT
 
     const int tid = threadIdx;
     const int data_num = arg.data_num;
@@ -133,8 +133,8 @@ __global__ void teco_slave_reduce_variance_axis_left_float(ReduceVarianceArgs ar
         return;
 
     const int block_size = row_per_loop * col_per_loop * sizeof(float);
-    float* xbuf = (float*)rt_spm_malloc(block_size);
-    float* tmpbuf = (float*)rt_spm_malloc(col_per_loop * sizeof(float) * 4);
+    float* xbuf = (float*)rt_spm_malloc(block_size);  // NOLINT
+    float* tmpbuf = (float*)rt_spm_malloc(col_per_loop * sizeof(float) * 4);  // NOLINT
     float *meanbuf, *squarebuf, *ybuf;
     meanbuf = tmpbuf + col_per_loop;
     squarebuf = meanbuf + col_per_loop;
@@ -184,8 +184,8 @@ __global__ void teco_slave_reduce_variance_axis_left_float(ReduceVarianceArgs ar
         for (y_index = 0; y_index <= cur_col - 16; y_index += 16) {
             simd_load(final_mean, meanbuf + y_index);
             simd_load(final_square, squarebuf + y_index);
-            final_variance = final_square - (final_mean / static_cast<float>(matrix_row * final_mean));  //NOLINT
-            final_y = final_variance / (static_cast<float>(matrix_row - correction));  //NOLINT
+            final_variance = final_square - (final_mean / (float)matrix_row * final_mean);  //NOLINT
+            final_y = final_variance / ((float)matrix_row - correction);  //NOLINT
             simd_store(final_y, ybuf + y_index);
         }
         float mean, variance;

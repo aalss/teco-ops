@@ -109,8 +109,8 @@ __device__ static __always_inline void caculate_variance(float* x, float* mean, 
 // deal with the data like (B, row, col) and transfer to (B, 1, col)
 __global__ void teco_slave_reduce_variance_axis_middle_float(ReduceVarianceArgs arg) {
     const int spe_num = arg.spe_num;
-    const float* x = (float*)(arg.x);
-    float* y = (float*)(arg.y);
+    const float* x = (float*)(arg.x);  // NOLINT
+    float* y = (float*)(arg.y);  // NOLINT
 
     const int data_num = arg.data_num;
 
@@ -130,8 +130,8 @@ __global__ void teco_slave_reduce_variance_axis_middle_float(ReduceVarianceArgs 
     if (tid >= matrix_num)
         return;
 
-    float* tmpbuf = (float*)rt_spm_malloc(col_per_loop * sizeof(float) * 4);
-    float* xbuf = (float*)rt_spm_malloc(blocksize);
+    float* tmpbuf = (float*)rt_spm_malloc(col_per_loop * sizeof(float) * 4);  // NOLINT
+    float* xbuf = (float*)rt_spm_malloc(blocksize);  // NOLINT
     float *ybuf, *meanbuf, *squarebuf;
     meanbuf = tmpbuf + col_per_loop;
     squarebuf = meanbuf + col_per_loop;
@@ -184,16 +184,15 @@ __global__ void teco_slave_reduce_variance_axis_middle_float(ReduceVarianceArgs 
                 simd_load(final_mean, meanbuf + y_index);
                 simd_load(final_square, squarebuf + y_index);
                 // NOLINT
-                final_y = (final_square -
-                           (final_mean / static_cast<float>(matrix_row) * final_mean)) /
-                          (static_cast<float>(matrix_row) - correction);
+                final_y = (final_square - (final_mean / (float)matrix_row * final_mean)) /
+                          ((float)matrix_row - correction);  // NOLINT
                 simd_store(final_y, ybuf + y_index);
             }
             float mean, variance;
             for (; y_index < cur_col; ++y_index) {
                 mean = meanbuf[y_index];
-                variance = squarebuf[y_index] - (mean / static_cast<float>(matrix_row) * mean);
-                ybuf[y_index] = variance / (static_cast<float>(matrix_row) - correction);
+                variance = squarebuf[y_index] - (mean / matrix_row * mean);  // NOLINT
+                ybuf[y_index] = variance / (matrix_row - correction);  // NOLINT
             }
             // transfer data of ybuf to y
             stride_config(stride, 1, 0);
